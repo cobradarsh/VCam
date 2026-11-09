@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>title</key>
+	<string>OpenVCam</string>
+	<key>items</key>
+	<array>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>OpenVCam</string>
+			<key>footerText</key>
+			<string>Replaces the live camera feed with your own video. For personal use on your own device.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>label</key>
+			<string>Enabled</string>
+			<key>key</key>
+			<string>Enabled</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.example.openvcam</string>
+			<key>PostNotification</key>
+			<string>com.example.openvcam/settingschanged</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Source video</string>
+			<key>footerText</key>
+			<string>Full path to an .mp4/.mov on the device. Encode it at the resolution the target app uses (often 1280x720 or 1920x1080) for the cleanest result.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSEditTextCell</string>
+			<key>label</key>
+			<string>Path</string>
+			<key>key</key>
+			<string>SourcePath</string>
+			<key>defaults</key>
+			<string>com.example.openvcam</string>
+			<key>PostNotification</key>
+			<string>com.example.openvcam/settingschanged</string>
+			<key>placeholder</key>
+			<string>/var/mobile/Documents/openvcam.mp4</string>
+			<key>autoCapitalizationType</key>
+			<integer>0</integer>
+			<key>autoCorrectionType</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkCell</string>
+			<key>label</key>
+			<string>Choose video…</string>
+			<key>detail</key>
+			<string>OVCFilePickerController</string>
+			<key>isController</key>
+			<true/>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Orientation</string>
+			<key>footerText</key>
+			<string>If the image looks sideways or mirrored in the app, adjust these until it looks right. Applies to preview, video, and photos.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkListCell</string>
+			<key>label</key>
+			<string>Rotation</string>
+			<key>key</key>
+			<string>Rotation</string>
+			<key>default</key>
+			<integer>0</integer>
+			<key>defaults</key>
+			<string>com.example.openvcam</string>
+			<key>PostNotification</key>
+			<string>com.example.openvcam/settingschanged</string>
+			<key>validTitles</key>
+			<array>
+				<string>0°</string>
+				<string>90°</string>
+				<string>180°</string>
+				<string>270°</string>
+			</array>
+			<key>validValues</key>
+			<array>
+				<integer>0</integer>
+				<integer>90</integer>
+				<integer>180</integer>
+				<integer>270</integer>
+			</array>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>label</key>
+			<string>Mirror (flip horizontally)</string>
+			<key>key</key>
+			<string>Mirror</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.example.openvcam</string>
+			<key>PostNotification</key>
+			<string>com.example.openvcam/settingschanged</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Capture</string>
+			<key>footerText</key>
+			<string>Auto-scale resizes your clip to the app's camera resolution (aspect-fill) so dimensions always match. Turn off to send the source at its own size.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>label</key>
+			<string>Auto-scale to camera resolution</string>
+			<key>key</key>
+			<string>AutoScale</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.example.openvcam</string>
+			<key>PostNotification</key>
+			<string>com.example.openvcam/settingschanged</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Audio</string>
+			<key>footerText</key>
+			<string>Replace the microphone with the clip's audio. Works for apps that capture audio frames; apps that record straight to a movie file are not affected. Experimental.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>label</key>
+			<string>Replace microphone audio</string>
+			<key>key</key>
+			<string>ReplaceAudio</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.example.openvcam</string>
+			<key>PostNotification</key>
+			<string>com.example.openvcam/settingschanged</string>
+		</dict>
+	</array>
+</dict>
+</plist>

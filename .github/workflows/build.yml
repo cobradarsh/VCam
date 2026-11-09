@@ -1,0 +1,50 @@
+name: Build OpenVCam .deb
+
+# Builds the tweak in the cloud and attaches the .deb(s) as downloadable
+# artifacts. No Mac required: push this repo to GitHub and the job runs.
+# You can also trigger it by hand from the Actions tab (workflow_dispatch).
+
+on:
+  push:
+    branches: [ "**" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    strategy:
+      fail-fast: false
+      matrix:
+        # rootful  -> classic jailbreaks (unc0ver, checkra1n, rootful)
+        # rootless -> Dopamine, palera1n-rootless (arm64e) <- likely yours
+        scheme: [ rootful, rootless ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Theos
+        run: |
+          export THEOS=$HOME/theos
+          git clone --quiet --recursive https://github.com/theos/theos.git "$THEOS"
+          echo "THEOS=$THEOS" >> "$GITHUB_ENV"
+
+      - name: Install iOS SDKs
+        run: |
+          git clone --quiet https://github.com/theos/sdks.git /tmp/sdks
+          mv /tmp/sdks/*.sdk "$THEOS/sdks/"
+
+      - name: Build (${{ matrix.scheme }})
+        run: |
+          if [ "${{ matrix.scheme }}" = "rootless" ]; then
+            export THEOS_PACKAGE_SCHEME=rootless
+          fi
+          make clean || true
+          make package FINALPACKAGE=1
+
+      - name: Upload .deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenVCam-${{ matrix.scheme }}
+          path: packages/*.deb
+          if-no-files-found: error
