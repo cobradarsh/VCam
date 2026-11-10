@@ -1,8 +1,9 @@
 name: Build OpenVCam .deb
 
 # Builds the tweak in the cloud and attaches the .deb(s) as downloadable
-# artifacts. No Mac required: push this repo to GitHub and the job runs.
-# You can also trigger it by hand from the Actions tab (workflow_dispatch).
+# artifacts. No Mac required: this runs on Linux and cross-compiles to
+# arm64/arm64e using the Theos Linux toolchain. Push the repo and the job runs;
+# you can also start it by hand from the Actions tab (workflow_dispatch).
 
 on:
   push:
@@ -11,7 +12,9 @@ on:
 
 jobs:
   build:
-    runs-on: macos-13
+    # Linux runners are always available and fast. Theos cross-compiles iOS
+    # binaries here just like it does on a Mac — the output .deb is identical.
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -19,20 +22,48 @@ jobs:
         # rootless -> Dopamine, palera1n-rootless (arm64e) <- likely yours
         scheme: [ rootful, rootless ]
 
+    env:
+      THEOS: ${{ github.workspace }}/theos
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential fakeroot rsync perl curl git xz-utils libtinfo6 libxml2
+
       - name: Install Theos
         run: |
-          export THEOS=$HOME/theos
           git clone --quiet --recursive https://github.com/theos/theos.git "$THEOS"
-          echo "THEOS=$THEOS" >> "$GITHUB_ENV"
+
+      - name: Install Linux iOS toolchain
+        run: |
+          # Non-Swift iOS toolchain (clang + ld + ldid) — exactly what Theos
+          # installs on Linux in CI for an Objective-C/Logos tweak.
+          mkdir -p "$THEOS/toolchain"
+          curl -fL --retry 5 --retry-delay 5 \
+            https://github.com/L1ghtmann/llvm-project/releases/latest/download/iOSToolchain-x86_64.tar.xz \
+            | tar -xJf - -C "$THEOS/toolchain/"
+          if [ ! -x "$THEOS/toolchain/linux/iphone/bin/clang" ]; then
+            echo "::error::clang not found after toolchain install; tree below:"
+            ls -R "$THEOS/toolchain" | head -100
+            exit 1
+          fi
+          "$THEOS/toolchain/linux/iphone/bin/clang" --version || true
+          # ldid is needed to sign the binary; report whether the toolchain
+          # bundled it (it normally does).
+          ls -l "$THEOS/toolchain/linux/iphone/bin/ldid" 2>/dev/null || \
+            echo "note: ldid not in toolchain bin (Theos may provide its own)"
 
       - name: Install iOS SDKs
         run: |
           git clone --quiet https://github.com/theos/sdks.git /tmp/sdks
           mv /tmp/sdks/*.sdk "$THEOS/sdks/"
+          echo "SDKs installed:"
+          ls "$THEOS/sdks/"
 
       - name: Build (${{ matrix.scheme }})
         run: |
@@ -41,6 +72,9 @@ jobs:
           fi
           make clean || true
           make package FINALPACKAGE=1
+
+      - name: Show packages
+        run: ls -l packages/ || true
 
       - name: Upload .deb
         uses: actions/upload-artifact@v4
