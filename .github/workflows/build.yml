@@ -14,7 +14,10 @@ jobs:
   build:
     # Linux runners are always available and fast. Theos cross-compiles iOS
     # binaries here just like it does on a Mac — the output .deb is identical.
-    runs-on: ubuntu-latest
+    # Pinned to 24.04 LTS: the Theos Linux toolchain expects this glibc/ncurses
+    # era, and "ubuntu-latest" has rolled to 26.04 where some runtime package
+    # names changed.
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
