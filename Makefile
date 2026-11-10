@@ -1,5 +1,8 @@
 export ARCHS = arm64 arm64e
-export TARGET = iphone:clang:latest:14.0
+# Pinned to Theos's patched iOS 16.5 SDK (from github.com/theos/sdks): it ships
+# the private Preferences.framework the Settings bundle needs, which Xcode's own
+# SDK does not. Deploys to iOS 14.0+, so arm64e is built with the new ABI.
+export TARGET = iphone:clang:16.5:14.0
 
 # Rootless jailbreaks (Dopamine, palera1n-rootless): uncomment the next line.
 # The commercial .deb you referenced was arm64e / rootless-style, so you

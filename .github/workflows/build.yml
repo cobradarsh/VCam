@@ -1,9 +1,14 @@
 name: Build OpenVCam .deb
 
 # Builds the tweak in the cloud and attaches the .deb(s) as downloadable
-# artifacts. No Mac required: this runs on Linux and cross-compiles to
-# arm64/arm64e using the Theos Linux toolchain. Push the repo and the job runs;
-# you can also start it by hand from the Actions tab (workflow_dispatch).
+# artifacts. Push the repo and the job runs; you can also start it by hand from
+# the Actions tab (workflow_dispatch).
+#
+# This MUST build on macOS with Xcode. On A12+ devices, system processes such as
+# Settings and Camera are arm64e and only load arm64e code built with the *new*
+# arm64e ABI (iOS 14+). Theos can only produce that ABI with Xcode's toolchain;
+# Linux toolchains emit the old ABI, which dyld rejects ("arm64e.old"). That is
+# what made the Settings panel fail with "OpenVCamPrefs couldn't be loaded".
 
 on:
   push:
@@ -12,12 +17,7 @@ on:
 
 jobs:
   build:
-    # Linux runners are always available and fast. Theos cross-compiles iOS
-    # binaries here just like it does on a Mac — the output .deb is identical.
-    # Pinned to 24.04 LTS: the Theos Linux toolchain expects this glibc/ncurses
-    # era, and "ubuntu-latest" has rolled to 26.04 where some runtime package
-    # names changed.
-    runs-on: ubuntu-24.04
+    runs-on: macos-15
     strategy:
       fail-fast: false
       matrix:
@@ -27,45 +27,30 @@ jobs:
 
     env:
       THEOS: ${{ github.workspace }}/theos
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      HOMEBREW_NO_INSTALL_CLEANUP: "1"
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install build dependencies
+      - name: Toolchain info
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            build-essential fakeroot rsync perl curl git xz-utils libtinfo6 libxml2
+          xcodebuild -version
+          clang --version
+
+      - name: Install dependencies (ldid, xz, GNU make)
+        run: brew install ldid xz make
 
       - name: Install Theos
-        run: |
-          git clone --quiet --recursive https://github.com/theos/theos.git "$THEOS"
-
-      - name: Install Linux iOS toolchain
-        run: |
-          # Non-Swift iOS toolchain (clang + ld + ldid) — exactly what Theos
-          # installs on Linux in CI for an Objective-C/Logos tweak.
-          mkdir -p "$THEOS/toolchain"
-          curl -fL --retry 5 --retry-delay 5 \
-            https://github.com/L1ghtmann/llvm-project/releases/latest/download/iOSToolchain-x86_64.tar.xz \
-            | tar -xJf - -C "$THEOS/toolchain/"
-          if [ ! -x "$THEOS/toolchain/linux/iphone/bin/clang" ]; then
-            echo "::error::clang not found after toolchain install; tree below:"
-            ls -R "$THEOS/toolchain" | head -100
-            exit 1
-          fi
-          "$THEOS/toolchain/linux/iphone/bin/clang" --version || true
-          # ldid is needed to sign the binary; report whether the toolchain
-          # bundled it (it normally does).
-          ls -l "$THEOS/toolchain/linux/iphone/bin/ldid" 2>/dev/null || \
-            echo "note: ldid not in toolchain bin (Theos may provide its own)"
+        run: git clone --quiet --recursive https://github.com/theos/theos.git "$THEOS"
 
       - name: Install iOS SDKs
         run: |
+          # Theos's patched SDKs include private frameworks (Preferences.framework),
+          # which the Settings bundle links against. The Makefile pins one of these.
           git clone --quiet https://github.com/theos/sdks.git /tmp/sdks
           mv /tmp/sdks/*.sdk "$THEOS/sdks/"
-          echo "SDKs installed:"
           ls "$THEOS/sdks/"
 
       - name: Build (${{ matrix.scheme }})
@@ -73,11 +58,41 @@ jobs:
           if [ "${{ matrix.scheme }}" = "rootless" ]; then
             export THEOS_PACKAGE_SCHEME=rootless
           fi
-          make clean || true
-          make package FINALPACKAGE=1
+          # Maintainer scripts must be executable or dpkg rejects the package.
+          chmod 0755 layout/DEBIAN/* 2>/dev/null || true
+          gmake clean || true
+          gmake package FINALPACKAGE=1
+
+      - name: Verify arm64e slices use the new ABI
+        run: |
+          python3 - <<'PY'
+          import os, struct, sys
+          PTRAUTH_ABI = 0x80000000
+          bad, checked = [], 0
+          for root, _, files in os.walk(".theos/_"):
+              for f in files:
+                  p = os.path.join(root, f)
+                  with open(p, "rb") as fh:
+                      head = fh.read(4096)
+                  if len(head) < 8 or struct.unpack(">I", head[:4])[0] != 0xCAFEBABE:
+                      continue
+                  n = struct.unpack(">I", head[4:8])[0]
+                  for i in range(n):
+                      cpu, sub = struct.unpack(">iI", head[8 + i * 20: 16 + i * 20])
+                      if cpu == 0x0100000C and (sub & 0xFF) == 2:
+                          checked += 1
+                          state = "new ABI" if sub & PTRAUTH_ABI else "OLD ABI"
+                          print(f"{p}: arm64e subtype={sub:#010x} -> {state}")
+                          if not sub & PTRAUTH_ABI:
+                              bad.append(p)
+          if checked == 0:
+              sys.exit("no arm64e slices found to check")
+          if bad:
+              sys.exit("old-ABI arm64e slices will not load on iOS 14+: " + ", ".join(bad))
+          PY
 
       - name: Show packages
-        run: ls -l packages/ || true
+        run: ls -l packages/
 
       - name: Upload .deb
         uses: actions/upload-artifact@v4
