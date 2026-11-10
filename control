@@ -1,9 +1,9 @@
 Package: com.example.openvcam
 Name: OpenVCam
-Version: 1.0.0
-Architecture: iphoneos-arm64
+Version: 1.1.0
+Architecture: iphoneos-arm
 Description: Open virtual camera - replace the live camera feed with your own video.
 Maintainer: Your Name <you@example.com>
 Author: Your Name <you@example.com>
 Section: Tweaks
-Depends: mobilesubstrate, preferenceloader, firmware (>= 13.0)
+Depends: mobilesubstrate, preferenceloader, firmware (>= 14.0)

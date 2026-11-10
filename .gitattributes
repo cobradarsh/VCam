@@ -1,0 +1,4 @@
+# Package maintainer scripts run on the device with /bin/sh: keep LF endings
+# even when edited on Windows.
+layout/DEBIAN/* text eol=lf
+*.sh text eol=lf

@@ -2,9 +2,9 @@ include $(THEOS)/makefiles/common.mk
 
 BUNDLE_NAME = OpenVCamPrefs
 
-OpenVCamPrefs_FILES = OVCRootListController.m OVCFilePickerController.m
+OpenVCamPrefs_FILES = OVCRootListController.m
 OpenVCamPrefs_INSTALL_PATH = /Library/PreferenceBundles
-OpenVCamPrefs_FRAMEWORKS = UIKit
+OpenVCamPrefs_FRAMEWORKS = UIKit PhotosUI UniformTypeIdentifiers
 OpenVCamPrefs_PRIVATE_FRAMEWORKS = Preferences
 OpenVCamPrefs_CFLAGS = -fobjc-arc
 

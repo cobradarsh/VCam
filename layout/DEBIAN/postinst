@@ -1,0 +1,17 @@
+#!/bin/sh
+# Create the folder that Settings copies imported videos into. Settings runs as
+# `mobile` and can't create folders under Library/Application Support itself,
+# so set it up here (dpkg runs this as root). Camera apps read it from there.
+
+if [ -e /var/jb/Library/MobileSubstrate/DynamicLibraries/OpenVCam.dylib ]; then
+	PREFIX=/var/jb   # rootless
+else
+	PREFIX=          # rootful
+fi
+
+DIR="$PREFIX/Library/Application Support/OpenVCam"
+mkdir -p "$DIR"
+chown mobile:mobile "$DIR" 2>/dev/null || chown 501:501 "$DIR"
+chmod 0755 "$DIR"
+
+exit 0

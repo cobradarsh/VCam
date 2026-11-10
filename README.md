@@ -62,8 +62,15 @@ cross-compiler. Let GitHub build it for you:
 
 1. Create a new GitHub repo and push these files to it (this folder = repo root,
    so `Makefile` sits at the top level).
-2. The included workflow (`.github/workflows/build.yml`) runs automatically and
-   builds both a **rootful** and a **rootless** `.deb`.
+2. The included workflow (`.github/workflows/build.yml`) runs automatically on a
+   macOS runner and builds both a **rootful** and a **rootless** `.deb`.
+
+> **Why macOS?** On A12+ devices, Settings, Camera and SpringBoard are arm64e
+> processes, and on iOS 14+ they only load arm64e code built with the *new*
+> arm64e ABI. Only Xcode's toolchain produces that; Linux/WSL toolchains emit the
+> old ABI, which dyld rejects (the symptom is "The bundle “OpenVCamPrefs”
+> couldn't be loaded"). The workflow fails the build if an old-ABI slice slips
+> through.
 3. Open the run under the repo's **Actions** tab, and download the `.deb` from
    the **Artifacts** section (`OpenVCam-rootless` is the one for modern arm64e
    devices like Dopamine / palera1n-rootless).
@@ -88,7 +95,7 @@ The `.deb` lands in `./packages/`.
 make install THEOS_DEVICE_IP=<device-ip>
 
 # Option B: copy the .deb to the device and install it with your package
-# manager (Sileo/Zebra), or: dpkg -i com.example.openvcam_1.0.0_*.deb
+# manager (Sileo/Zebra), or: dpkg -i com.example.openvcam_*.deb
 ```
 
 Then respring (or reopen the target app).
@@ -97,17 +104,18 @@ Then respring (or reopen the target app).
 
 ## Usage
 
-1. Put your source clip on the device, e.g.:
-   ```
-   /var/mobile/Documents/openvcam.mp4
-   ```
-   Encode it at the resolution the target app uses — commonly 1280x720 or
-   1920x1080 — for the cleanest result.
+1. Open **Settings → OpenVCam** and turn **Enabled** on.
 
-2. Open **Settings → OpenVCam**, turn **Enabled** on, and choose your clip: type
-   a **Path**, or tap **Choose video…** to pick one from `/var/mobile/Documents`.
+2. Tap **Choose from Photos…** or **Choose from Files…** and pick a video.
+   OpenVCam copies it into its own folder,
+   `<jbroot>/Library/Application Support/OpenVCam/`, which camera apps can read
+   from inside their sandbox, and points **Path** at the copy. Only the newest
+   import is kept. (You can still type a **Path** by hand instead.)
+
    Changes apply live — the bundle posts a Darwin notification the tweak listens
-   for; if an app was already open, reopen its camera screen.
+   for; if an app was already open, reopen its camera screen. A clip at the
+   resolution the target app uses (commonly 1280x720 or 1920x1080) gives the
+   cleanest result.
 
 3. If the image looks sideways or mirrored, set **Rotation** (0/90/180/270) and
    **Mirror** on the same screen until it looks right. This applies to preview,
@@ -122,7 +130,8 @@ Prefer the command line? The settings live in the `com.example.openvcam`
 preferences domain:
 ```bash
 defaults write com.example.openvcam Enabled -bool true
-defaults write com.example.openvcam SourcePath -string /var/mobile/Documents/openvcam.mp4
+# (rootless path shown; on rootful drop the /var/jb prefix)
+defaults write com.example.openvcam SourcePath -string "/var/jb/Library/Application Support/OpenVCam/clip.mp4"
 notify_post com.example.openvcam/settingschanged
 ```
 
@@ -134,7 +143,8 @@ Turn **Enabled** off to pass the real camera through untouched.
 
 Covered so far: data-output capture, live preview, still-photo capture
 (`AVCapturePhoto`), manual rotation/mirror, auto-scaling to the app's
-resolution, an in-Settings video picker, and microphone-audio replacement.
+resolution, importing a video from Photos or Files, and microphone-audio
+replacement.
 Remaining gaps / follow-ups:
 
 - **Auto orientation.** Rotation/mirror are manual (Settings → OpenVCam).
@@ -166,7 +176,8 @@ Say the word and I'll build any of these on top of what's here.
 | `VCamPreview.h/.m`| Overlays the live preview with the same source frames.    |
 | `VCamAudio.h/.m`  | Decodes the clip's audio to PCM for mic replacement.      |
 | `Tweak.x`         | Hooks for captured video, preview, and still photos.      |
-| `prefs/`          | Settings: toggle, path, video picker, orientation.        |
+| `prefs/`          | Settings: toggle, Photos/Files import, path, orientation. |
+| `layout/DEBIAN/`  | postinst/postrm: create / clean up the import folder.     |
 
 Rename `com.example.openvcam` and the `Your Name` fields in `control` to your
 own before building.

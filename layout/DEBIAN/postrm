@@ -1,0 +1,14 @@
+#!/bin/sh
+# On uninstall, remove the copies of imported videos (they can be large).
+# Upgrades keep them.
+
+case "$1" in
+	remove|purge)
+		for DIR in "/var/jb/Library/Application Support/OpenVCam" \
+		           "/Library/Application Support/OpenVCam"; do
+			[ -d "$DIR" ] && rm -rf "$DIR"
+		done
+		;;
+esac
+
+exit 0

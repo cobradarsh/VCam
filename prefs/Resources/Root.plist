@@ -34,7 +34,23 @@
 			<key>label</key>
 			<string>Source video</string>
 			<key>footerText</key>
-			<string>Full path to an .mp4/.mov on the device. Encode it at the resolution the target app uses (often 1280x720 or 1920x1080) for the cleanest result.</string>
+			<string>Pick a video from Photos or Files. OpenVCam copies it into its own folder so camera apps can read it; the Path below updates automatically. You can also type a path by hand.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>Choose from Photos…</string>
+			<key>action</key>
+			<string>pickFromPhotos:</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>Choose from Files…</string>
+			<key>action</key>
+			<string>pickFromFiles:</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -48,21 +64,11 @@
 			<key>PostNotification</key>
 			<string>com.example.openvcam/settingschanged</string>
 			<key>placeholder</key>
-			<string>/var/mobile/Documents/openvcam.mp4</string>
+			<string>Set by Choose from Photos/Files</string>
 			<key>autoCapitalizationType</key>
 			<integer>0</integer>
 			<key>autoCorrectionType</key>
 			<integer>1</integer>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSLinkCell</string>
-			<key>label</key>
-			<string>Choose video…</string>
-			<key>detail</key>
-			<string>OVCFilePickerController</string>
-			<key>isController</key>
-			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
